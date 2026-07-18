@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import Finance from './pages/Finance'
 import Orders from './pages/Orders'
 import Calendar from './pages/Calendar'
@@ -18,11 +18,54 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]['id']
 
+function Login({ onSuccess }: { onSuccess: () => void }) {
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    try {
+      await api.post('/auth/login', { password })
+      onSuccess()
+    } catch {
+      setError('Неверный пароль')
+    }
+  }
+
+  return (
+    <div className="mx-auto flex h-dvh max-w-lg flex-col items-center justify-center p-6">
+      <form onSubmit={(e) => void submit(e)} className="w-full space-y-3 rounded-2xl bg-slate-900 p-6">
+        <h1 className="text-center text-xl font-bold">❄️ Кондей-Мастер</h1>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Пароль"
+          autoFocus
+          className="w-full rounded-lg bg-slate-800 px-3 py-2"
+        />
+        {error && <p className="text-sm text-rose-400">{error}</p>}
+        <button type="submit" className="w-full rounded-lg bg-emerald-600 py-2 font-semibold">
+          Войти
+        </button>
+      </form>
+    </div>
+  )
+}
+
 export default function App() {
   const [tab, setTab] = useState<TabId>('finance')
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showNotif, setShowNotif] = useState(false)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') ?? 'dark')
+  const [authed, setAuthed] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    void api
+      .get<{ authenticated: boolean }>('/auth/me')
+      .then((r) => setAuthed(r.authenticated))
+      .catch(() => setAuthed(true))
+  }, [])
 
   useEffect(() => {
     document.documentElement.classList.toggle('light', theme === 'light')
@@ -30,11 +73,12 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
-    const load = () => void api.get<Notification[]>('/notifications').then(setNotifications)
+    if (!authed) return
+    const load = () => void api.get<Notification[]>('/notifications').then(setNotifications).catch(() => {})
     load()
     const t = setInterval(load, 15000)
     return () => clearInterval(t)
-  }, [])
+  }, [authed])
 
   const unread = notifications.filter((n) => !n.read).length
 
@@ -45,6 +89,9 @@ export default function App() {
       setNotifications((ns) => ns.map((n) => ({ ...n, read: true })))
     }
   }
+
+  if (authed === null) return null
+  if (!authed) return <Login onSuccess={() => setAuthed(true)} />
 
   return (
     <div className="mx-auto flex h-dvh max-w-lg flex-col">

@@ -11,7 +11,34 @@
 5. **ИИ-ассистент (AI Router)** — общение с клиентами. Провайдер переключается в настройках: OpenRouter (DeepSeek), YandexGPT, OpenAI, локальный ПК (Ollama/LM Studio). **Fallback:** если ИИ недоступен, диалог автоматически переводится в «Ручной режим» и приходит уведомление.
 6. **Чаты** — единое окно диалогов, тумблер «ИИ отвечает / Ручной режим», ручные ответы из админки, тестовый режим (симуляция клиента).
 
-## Запуск
+## Запуск на сервере (Docker — рекомендуется)
+
+```bash
+git clone <repo> kondei && cd kondei
+cp .env.example .env      # задай ADMIN_PASSWORD (пароль входа в админку)
+docker compose up -d --build
+```
+
+Приложение поднимется на `127.0.0.1:8080` (только localhost — наружу его выставляет твой nginx). Пример блока для nginx на хосте:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name kondei.твой-домен.ру;
+    # ssl_certificate ... (certbot)
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+База SQLite хранится в docker-томе `kondei-data` и переживает пересборки. Обновление: `git pull && docker compose up -d --build`.
+
+Вход защищён паролем `ADMIN_PASSWORD` (сессия-cookie на 30 дней). Если переменная пустая, вход отключён — так работает только локальная разработка.
+
+## Запуск локально (для разработки)
 
 ```bash
 # Backend

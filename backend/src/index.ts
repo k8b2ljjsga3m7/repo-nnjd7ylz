@@ -10,10 +10,13 @@ import { chats } from './routes/chats.js'
 import { settings } from './routes/settings.js'
 import { notifications } from './routes/notifications.js'
 import { messengers } from './routes/messengers.js'
+import { auth, requireAuth } from './auth.js'
 
 const app = express()
-app.use(cors())
+app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
+app.use('/api', requireAuth)
+app.use('/api/auth', auth)
 
 app.use('/api/finances', finances)
 app.use('/api/orders', orders)

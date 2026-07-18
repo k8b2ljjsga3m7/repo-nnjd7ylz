@@ -1,0 +1,21 @@
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "file:/data/kondei.db"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?Задай ADMIN_PASSWORD в файле .env}"
+      AUTH_SECRET: "${AUTH_SECRET:-}"
+    volumes:
+      - kondei-data:/data
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8080:80"
+
+volumes:
+  kondei-data:
