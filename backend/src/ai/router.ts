@@ -1,4 +1,5 @@
 import { getSettings, prisma } from '../db.js'
+import { notify } from '../notify.js'
 
 export interface ChatTurn {
   role: 'user' | 'assistant' | 'system'
@@ -99,9 +100,10 @@ export async function replyToClient(chatId: number, clientText: string): Promise
     return answer
   } catch (e) {
     await prisma.chat.update({ where: { id: chatId }, data: { aiEnabled: false } })
-    await prisma.notification.create({
-      data: { text: `⚠️ ИИ недоступен (${(e as Error).message.slice(0, 120)}). Клиент "${chat.clientName || chat.externalId}" ждёт ответа — диалог переведён в ручной режим.` },
-    })
+    await notify(
+      'alert',
+      `⚠️ ИИ недоступен (${(e as Error).message.slice(0, 120)}). Клиент "${chat.clientName || chat.externalId}" ждёт ответа — диалог переведён в ручной режим.`,
+    )
     return null
   }
 }

@@ -1,8 +1,11 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../db.js'
+import { notify } from '../notify.js'
 
 export const orders = Router()
+
+const fmtDate = (d: Date | null) => (d ? d.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' }) : 'без даты')
 
 const orderSchema = z.object({
   clientName: z.string().min(1),
@@ -27,12 +30,15 @@ orders.get('/', async (_req, res) => {
 
 orders.post('/', async (req, res) => {
   const { materials, ...data } = orderSchema.parse(req.body)
-  res.json(
-    await prisma.order.create({
-      data: { ...data, materials: { create: materials } },
-      include: { materials: { include: { item: true } } },
-    }),
+  const order = await prisma.order.create({
+    data: { ...data, materials: { create: materials } },
+    include: { materials: { include: { item: true } } },
+  })
+  await notify(
+    'order',
+    `📝 Новая запись: заказ #${order.id} — ${order.clientName}, ${fmtDate(order.scheduledAt)}${order.address ? `, ${order.address}` : ''}${order.price ? `, ${order.price} ₽` : ''}`,
   )
+  res.json(order)
 })
 
 orders.put('/:id', async (req, res) => {
@@ -69,10 +75,13 @@ orders.post('/:id/status', async (req, res) => {
     }
     return tx.order.update({ where: { id }, data: { status }, include: { materials: { include: { item: true } } } })
   })
+  if (status === 'done' && order.status !== 'done') {
+    await notify('order', `✅ Заказ #${order.id} (${order.clientName}) завершён${order.price ? `: +${order.price} ₽` : ''}`)
+  }
   // Алерт по низким остаткам
   const low = await prisma.inventoryItem.findMany({ where: { quantity: { lte: prisma.inventoryItem.fields.minStock } } })
   for (const item of low) {
-    await prisma.notification.create({ data: { text: `📦 Мало на складе: ${item.name} — осталось ${item.quantity} ${item.unit}` } })
+    await notify('alert', `📦 Мало на складе: ${item.name} — осталось ${item.quantity} ${item.unit}`)
   }
   res.json(result)
 })

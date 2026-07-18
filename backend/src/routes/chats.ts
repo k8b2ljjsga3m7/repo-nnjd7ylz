@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../db.js'
 import { replyToClient } from '../ai/router.js'
+import { notify } from '../notify.js'
 
 export const chats = Router()
 
@@ -48,11 +49,15 @@ chats.post('/incoming', async (req, res) => {
       text: z.string().min(1),
     })
     .parse(req.body)
+  const existing = await prisma.chat.findUnique({ where: { messenger_externalId: { messenger, externalId } } })
   const chat = await prisma.chat.upsert({
     where: { messenger_externalId: { messenger, externalId } },
     update: { ...(clientName ? { clientName } : {}), updatedAt: new Date() },
     create: { messenger, externalId, clientName },
   })
+  if (!existing) {
+    await notify('client', `👤 Новый клиент (${messenger}): ${clientName || externalId}\nПервое сообщение: «${text.slice(0, 200)}»`)
+  }
   const answer = await replyToClient(chat.id, text)
   res.json({ chatId: chat.id, answer })
 })

@@ -97,6 +97,11 @@ export interface Settings {
   aiLocalUrl: string
   aiSystemPrompt: string
   shiftCycleStart: string
+  tgBotToken: string
+  tgChatId: string
+  tgTopicClients: string
+  tgTopicOrders: string
+  tgTopicAlerts: string
 }
 
 export interface MessengerStatus {

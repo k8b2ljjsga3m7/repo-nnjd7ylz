@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [s, setS] = useState<Settings | null>(null)
   const [messengers, setMessengers] = useState<MessengerStatus[]>([])
   const [testResult, setTestResult] = useState('')
+  const [tgResult, setTgResult] = useState('')
 
   useEffect(() => {
     void api.get<Settings>('/settings').then(setS)
@@ -25,6 +26,20 @@ export default function SettingsPage() {
   const save = async () => {
     setS(await api.put<Settings>('/settings', s))
     setTestResult('Сохранено ✓')
+  }
+
+  const testTg = async () => {
+    setTgResult('Сохраняю и отправляю тест…')
+    const saved = await api.put<Settings>('/settings', s)
+    setS(saved)
+    const r = await api.post<{ ok: boolean; results: { kind: string; ok: boolean; error?: string }[] }>(
+      '/settings/test-telegram',
+    )
+    setTgResult(
+      r.ok
+        ? '✅ Тестовые сообщения отправлены во все топики'
+        : `❌ ${r.results.filter((x) => !x.ok).map((x) => `${x.kind}: ${x.error}`).join('; ')}`,
+    )
   }
 
   const testAi = async () => {
@@ -91,6 +106,63 @@ export default function SettingsPage() {
           </button>
         </div>
         {testResult && <p className="mt-2 text-sm text-slate-300">{testResult}</p>}
+      </div>
+
+      <div className="rounded-2xl bg-slate-900 p-4">
+        <h3 className="mb-1 font-semibold">🔔 Уведомления в Telegram</h3>
+        <p className="mb-3 text-xs text-slate-400">
+          Создай бота у @BotFather, добавь его в группу с включёнными топиками (сделай админом), укажи ID группы и ID
+          топиков (число из ссылки на топик: t.me/c/…/&lt;ID&gt;). Пустой ID топика — сообщение в общий чат.
+        </p>
+        <label className="mb-1 block text-sm text-slate-400">Токен бота</label>
+        <input
+          value={s.tgBotToken}
+          onChange={(e) => setS({ ...s, tgBotToken: e.target.value })}
+          placeholder="123456:ABC-DEF…"
+          className="mb-2 w-full rounded-lg bg-slate-800 p-2"
+        />
+        <label className="mb-1 block text-sm text-slate-400">ID группы (chat_id, обычно -100…)</label>
+        <input
+          value={s.tgChatId}
+          onChange={(e) => setS({ ...s, tgChatId: e.target.value })}
+          placeholder="-1001234567890"
+          className="mb-2 w-full rounded-lg bg-slate-800 p-2"
+        />
+        <div className="mb-2 grid grid-cols-3 gap-2">
+          <div>
+            <label className="mb-1 block text-xs text-slate-400">Топик: клиенты</label>
+            <input
+              value={s.tgTopicClients}
+              onChange={(e) => setS({ ...s, tgTopicClients: e.target.value })}
+              className="w-full rounded-lg bg-slate-800 p-2"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-slate-400">Топик: записи</label>
+            <input
+              value={s.tgTopicOrders}
+              onChange={(e) => setS({ ...s, tgTopicOrders: e.target.value })}
+              className="w-full rounded-lg bg-slate-800 p-2"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-slate-400">Топик: ошибки</label>
+            <input
+              value={s.tgTopicAlerts}
+              onChange={(e) => setS({ ...s, tgTopicAlerts: e.target.value })}
+              className="w-full rounded-lg bg-slate-800 p-2"
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => void save()} className="flex-1 rounded-lg bg-emerald-600 p-2 font-semibold hover:bg-emerald-500">
+            Сохранить
+          </button>
+          <button onClick={() => void testTg()} className="flex-1 rounded-lg bg-sky-600 p-2 font-semibold hover:bg-sky-500">
+            Проверить Telegram
+          </button>
+        </div>
+        {tgResult && <p className="mt-2 text-sm text-slate-300">{tgResult}</p>}
       </div>
 
       <div className="rounded-2xl bg-slate-900 p-4">
