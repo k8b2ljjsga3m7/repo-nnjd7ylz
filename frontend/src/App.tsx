@@ -22,6 +22,12 @@ export default function App() {
   const [tab, setTab] = useState<TabId>('finance')
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showNotif, setShowNotif] = useState(false)
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') ?? 'dark')
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', theme === 'light')
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   useEffect(() => {
     const load = () => void api.get<Notification[]>('/notifications').then(setNotifications)
@@ -44,12 +50,21 @@ export default function App() {
     <div className="mx-auto flex h-dvh max-w-lg flex-col">
       <header className="flex items-center justify-between border-b border-slate-800 p-4">
         <h1 className="text-lg font-bold">❄️ Кондей-Мастер · {tabs.find((t) => t.id === tab)?.title}</h1>
+        <div className="flex items-center gap-3">
+        <button
+          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          className="text-xl"
+          title="Сменить тему"
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
         <button onClick={() => void markRead()} className="relative text-xl">
           🔔
           {unread > 0 && (
             <span className="absolute -right-2 -top-1 rounded-full bg-rose-600 px-1.5 text-xs">{unread}</span>
           )}
         </button>
+        </div>
       </header>
 
       {showNotif && (
