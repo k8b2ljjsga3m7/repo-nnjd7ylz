@@ -19,6 +19,7 @@ settings.put('/', async (req, res) => {
       aiLocalUrl: z.string().optional(),
       aiSystemPrompt: z.string().optional(),
       debtGoal: z.number().positive().optional(),
+      shiftCycleStart: z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/).optional(),
     })
     .parse(req.body)
   if (data.aiApiKey?.startsWith('••••')) delete data.aiApiKey

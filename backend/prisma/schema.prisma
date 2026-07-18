@@ -17,6 +17,7 @@ model Settings {
   aiModel        String @default("deepseek/deepseek-chat")
   aiLocalUrl     String @default("http://localhost:11434")
   aiSystemPrompt String @default("Ты — вежливый ассистент мастера по установке кондиционеров. Отвечай кратко, по прайсу, предлагай свободные даты и записывай клиентов.")
+  shiftCycleStart String @default("")
 }
 
 model Transaction {

@@ -96,6 +96,7 @@ export interface Settings {
   aiModel: string
   aiLocalUrl: string
   aiSystemPrompt: string
+  shiftCycleStart: string
 }
 
 export interface MessengerStatus {
