@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { prisma, getSettings } from '../db.js'
-import { askAi } from '../ai/router.js'
+import { askAi, listModels } from '../ai/router.js'
 import { sendTelegram, type NotifyKind } from '../notify.js'
 
 export const settings = Router()
@@ -34,6 +34,14 @@ settings.put('/', async (req, res) => {
   if (data.tgBotToken?.startsWith('••••')) delete data.tgBotToken
   const s = await prisma.settings.update({ where: { id: 1 }, data })
   res.json({ ...s, aiApiKey: mask(s.aiApiKey), tgBotToken: mask(s.tgBotToken) })
+})
+
+settings.get('/models', async (_req, res) => {
+  try {
+    res.json({ ok: true, models: await listModels() })
+  } catch (e) {
+    res.json({ ok: false, error: (e as Error).message })
+  }
 })
 
 settings.post('/test-telegram', async (_req, res) => {

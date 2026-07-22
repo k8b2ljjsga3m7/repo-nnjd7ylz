@@ -16,6 +16,10 @@ export default function SettingsPage() {
   const [messengers, setMessengers] = useState<MessengerStatus[]>([])
   const [testResult, setTestResult] = useState('')
   const [tgResult, setTgResult] = useState('')
+  const [models, setModels] = useState<string[]>([])
+  const [modelsError, setModelsError] = useState('')
+  const [modelFilter, setModelFilter] = useState('')
+  const [modelsLoading, setModelsLoading] = useState(false)
 
   useEffect(() => {
     void api.get<Settings>('/settings').then(setS)
@@ -41,6 +45,17 @@ export default function SettingsPage() {
         ? '✅ Тестовые сообщения отправлены во все топики'
         : `❌ ${r.results.filter((x) => !x.ok).map((x) => `${x.kind}: ${x.error}`).join('; ')}`,
     )
+  }
+
+  const loadModels = async () => {
+    setModelsLoading(true)
+    setModelsError('')
+    setModels([])
+    await api.put<Settings>('/settings', s)
+    const r = await api.get<{ ok: boolean; models?: string[]; error?: string }>('/settings/models')
+    setModelsLoading(false)
+    if (r.ok && r.models) setModels(r.models)
+    else setModelsError(r.error ?? 'Неизвестная ошибка')
   }
 
   const testAi = async () => {
@@ -74,12 +89,49 @@ export default function SettingsPage() {
           className="mb-2 w-full rounded-lg bg-slate-800 p-2"
         />
         <label className="mb-1 block text-sm text-slate-400">Модель</label>
-        <input
-          value={s.aiModel}
-          onChange={(e) => setS({ ...s, aiModel: e.target.value })}
-          placeholder="deepseek/deepseek-chat"
-          className="mb-2 w-full rounded-lg bg-slate-800 p-2"
-        />
+        <div className="mb-2 flex gap-2">
+          <input
+            value={s.aiModel}
+            onChange={(e) => setS({ ...s, aiModel: e.target.value })}
+            placeholder="deepseek/deepseek-chat"
+            className="flex-1 rounded-lg bg-slate-800 p-2"
+          />
+          <button
+            onClick={() => void loadModels()}
+            className="shrink-0 rounded-lg bg-slate-700 px-3 text-sm hover:bg-slate-600"
+          >
+            {modelsLoading ? '…' : 'Показать модели'}
+          </button>
+        </div>
+        {modelsError && <p className="mb-2 text-sm text-rose-400">❌ {modelsError}</p>}
+        {models.length > 0 && (
+          <div className="mb-2 rounded-lg bg-slate-800 p-2">
+            <input
+              value={modelFilter}
+              onChange={(e) => setModelFilter(e.target.value)}
+              placeholder="Поиск среди моделей…"
+              className="mb-2 w-full rounded bg-slate-900 p-2 text-sm"
+            />
+            <div className="max-h-48 overflow-y-auto">
+              {models
+                .filter((m) => m.toLowerCase().includes(modelFilter.toLowerCase()))
+                .slice(0, 200)
+                .map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      setS({ ...s, aiModel: m })
+                      setModels([])
+                      setModelFilter('')
+                    }}
+                    className={`block w-full rounded px-2 py-1 text-left text-sm hover:bg-slate-700 ${m === s.aiModel ? 'text-emerald-400' : ''}`}
+                  >
+                    {m}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
         {s.aiProvider === 'local' && (
           <>
             <label className="mb-1 block text-sm text-slate-400">URL локального сервера (Ollama)</label>

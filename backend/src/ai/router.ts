@@ -68,6 +68,35 @@ const adapters: Record<string, (cfg: AiConfig, turns: ChatTurn[]) => Promise<str
     openAiCompatible(`${cfg.localUrl.replace(/\/$/, '')}/v1/chat/completions`, cfg.apiKey, cfg.model, turns),
 }
 
+async function openAiModels(url: string, apiKey: string): Promise<string[]> {
+  const res = await fetch(url, {
+    headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  })
+  if (!res.ok) throw new Error(`Models list error ${res.status}: ${await res.text()}`)
+  const data = (await res.json()) as { data: { id: string }[] }
+  return data.data.map((m) => m.id.replace(/^models\//, '')).sort()
+}
+
+export async function listModels(): Promise<string[]> {
+  const s = await getSettings()
+  switch (s.aiProvider) {
+    case 'openrouter':
+      return openAiModels('https://openrouter.ai/api/v1/models', s.aiApiKey)
+    case 'openai':
+      return openAiModels('https://api.openai.com/v1/models', s.aiApiKey)
+    case 'gemini':
+      return openAiModels('https://generativelanguage.googleapis.com/v1beta/openai/models', s.aiApiKey)
+    case 'local':
+      return openAiModels(`${s.aiLocalUrl.replace(/\/$/, '')}/v1/models`, s.aiApiKey)
+    case 'yandexgpt':
+      // Публичного API списка моделей нет — известные модели Foundation Models.
+      return ['yandexgpt-lite', 'yandexgpt', 'yandexgpt-32k', 'llama-lite', 'llama']
+    default:
+      throw new Error(`Unknown AI provider: ${s.aiProvider}`)
+  }
+}
+
 async function buildContext(): Promise<string> {
   const [blocked, orders] = await Promise.all([
     prisma.blockedDay.findMany({ where: { date: { gte: new Date() } } }),
