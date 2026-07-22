@@ -16,7 +16,7 @@ settings.get('/', async (_req, res) => {
 settings.put('/', async (req, res) => {
   const data = z
     .object({
-      aiProvider: z.enum(['openrouter', 'yandexgpt', 'openai', 'local']).optional(),
+      aiProvider: z.enum(['openrouter', 'yandexgpt', 'openai', 'gemini', 'local']).optional(),
       aiApiKey: z.string().optional(),
       aiModel: z.string().optional(),
       aiLocalUrl: z.string().optional(),

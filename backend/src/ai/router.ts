@@ -57,6 +57,13 @@ const adapters: Record<string, (cfg: AiConfig, turns: ChatTurn[]) => Promise<str
   openai: (cfg, turns) =>
     openAiCompatible('https://api.openai.com/v1/chat/completions', cfg.apiKey, cfg.model || 'gpt-4o-mini', turns),
   yandexgpt: yandexGpt,
+  gemini: (cfg, turns) =>
+    openAiCompatible(
+      'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      cfg.apiKey,
+      cfg.model || 'gemini-2.0-flash',
+      turns,
+    ),
   local: (cfg, turns) =>
     openAiCompatible(`${cfg.localUrl.replace(/\/$/, '')}/v1/chat/completions`, cfg.apiKey, cfg.model, turns),
 }

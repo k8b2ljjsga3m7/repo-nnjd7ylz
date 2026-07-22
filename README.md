@@ -62,6 +62,7 @@ npm run dev         # http://localhost:5173
 - **OpenRouter**: ключ с openrouter.ai, модель например `deepseek/deepseek-chat`.
 - **YandexGPT**: ключ в формате `folderId:apiKey`, модель `yandexgpt-lite`.
 - **OpenAI**: обычный API-ключ, модель `gpt-4o-mini`.
+- **Google Gemini**: ключ бесплатно на [aistudio.google.com](https://aistudio.google.com/apikey), модель `gemini-2.0-flash` (по умолчанию).
 - **Локальный ПК**: URL Ollama (например `http://192.168.1.10:11434`), модель например `qwen2.5:7b`.
 
 ## Уведомления в Telegram (топики)

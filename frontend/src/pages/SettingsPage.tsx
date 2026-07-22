@@ -5,6 +5,7 @@ const providers = [
   { value: 'openrouter', label: 'OpenRouter (DeepSeek и др.)' },
   { value: 'yandexgpt', label: 'YandexGPT' },
   { value: 'openai', label: 'OpenAI (ChatGPT)' },
+  { value: 'gemini', label: 'Google Gemini' },
   { value: 'local', label: 'Локальный ПК (Ollama / LM Studio)' },
 ]
 
