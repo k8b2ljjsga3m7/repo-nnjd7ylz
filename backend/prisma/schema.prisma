@@ -1,0 +1,111 @@
+// SQLite for local dev. To use Supabase/PostgreSQL, change provider to
+// "postgresql" and set DATABASE_URL to your Supabase connection string.
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Settings {
+  id             Int    @id @default(1)
+  debtGoal       Float  @default(1200000)
+  aiProvider     String @default("openrouter") // openrouter | yandexgpt | openai | local
+  aiApiKey       String @default("")
+  aiModel        String @default("deepseek/deepseek-chat")
+  aiLocalUrl     String @default("http://localhost:11434")
+  aiSystemPrompt String @default("Ты — вежливый ассистент мастера по установке кондиционеров. Отвечай кратко, по прайсу, предлагай свободные даты и записывай клиентов.")
+  shiftCycleStart String @default("")
+  tgBotToken      String @default("")
+  tgChatId        String @default("")
+  tgTopicClients  String @default("") // message_thread_id топика "Новые клиенты"
+  tgTopicOrders   String @default("") // топик "Записи/заказы"
+  tgTopicAlerts   String @default("") // топик "Ошибки и алерты"
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  type      String // income | expense | debt_payment
+  category  String // installation | yandex | materials | fuel | personal | other | credit
+  amount    Float
+  note      String   @default("")
+  date      DateTime @default(now())
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  clientName  String
+  phone       String      @default("")
+  address     String      @default("")
+  acModel     String      @default("")
+  routeLength Float       @default(0) // метры трассы
+  price       Float       @default(0)
+  status      String      @default("new") // new | in_progress | done | cancelled
+  scheduledAt DateTime?
+  note        String      @default("")
+  createdAt   DateTime    @default(now())
+  materials   OrderMaterial[]
+}
+
+model InventoryItem {
+  id       Int             @id @default(autoincrement())
+  name     String
+  unit     String          @default("шт") // м | шт | компл
+  quantity Float           @default(0)
+  minStock Float           @default(0)
+  orders   OrderMaterial[]
+}
+
+model OrderMaterial {
+  id       Int           @id @default(autoincrement())
+  order    Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId  Int
+  item     InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId   Int
+  quantity Float
+}
+
+model BlockedDay {
+  id     Int      @id @default(autoincrement())
+  date   DateTime @unique
+  reason String // main_job | day_off | sick
+}
+
+model Chat {
+  id         Int       @id @default(autoincrement())
+  messenger  String // telegram | whatsapp | max
+  externalId String
+  clientName String    @default("")
+  aiEnabled  Boolean   @default(true)
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+  messages   Message[]
+
+  @@unique([messenger, externalId])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chatId    Int
+  role      String // client | ai | me
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model MessengerSession {
+  id        Int      @id @default(autoincrement())
+  messenger String   @unique // telegram | whatsapp | max
+  status    String   @default("disconnected") // disconnected | pending | connected
+  data      String   @default("") // serialized session data
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  text      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
